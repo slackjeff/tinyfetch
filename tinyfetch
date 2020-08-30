@@ -1,0 +1,65 @@
+#!/bin/sh
+################################################################
+#AUTHOR
+# Jefferson 'Slackjeff' Carneiro
+#
+#CONTACT
+# jeffersoncarneiro@slackjeff.com.br
+#
+#LICENSE
+# GPLv2
+#
+# Tiny System Information tool writen in POSIX shell
+################################################################
+
+#========================= Variables
+export version='1.0'
+# For speed, support UNICODE OFF
+export LC='C'
+export LANG='C'
+#========================= Functions
+MEMORY() # Get memory total and free
+{
+  while IFS=: read -r j c; do
+    if [ "$j" = 'MemTotal' ]; then
+      memtotal=$(echo $c | cut -d ' ' -f 1)
+      memtotal="$((memtotal/1024))"
+    elif [ "$j" = 'MemFree' ]; then
+      memfree=$(echo $c | cut -d' ' -f1)
+      memfree="$((memfree/1024))"
+    fi
+  done < /proc/meminfo
+}
+
+CPU() # CPU INFO
+{
+  while IFS=: read -r a p; do
+    case $a in
+      "model name"*) modelname=$(echo $p | cut -d ' ' -f 1-) ;; esac
+  done < /proc/cpuinfo
+}
+
+AMBIENT() # i3, xfce, kde blablabla...
+{
+  [ ! -f "${HOME}/.xinitrc" ] && { ambient='NO INFO'; return ;}
+  ambient="$(basename $(grep -E '^\s*exec\s\/' "$HOME/.xinitrc" | sed 's/^\s*exec\s*//g'))"
+}
+
+INFO() # Print all info
+{
+  . /etc/os-release # Load Info
+  cat <<EOF
+
+                     $USER@$(uname -n)
+                     -------------------
+                     OS      : $PRETTY_NAME
+  |\__      |\___    AMBIENT : $ambient
+(:> __)X  (:o ___(   KERNEL  : $(uname -rs)
+  |/        |/       SHELL   : ${SHELL##*/}
+                     CPU     : $modelname
+ TINY IS INCRIBLE    MEM     : ${memfree}MB / ${memtotal}MB
+
+EOF
+}
+#========================= Main
+MEMORY; CPU; AMBIENT; INFO
