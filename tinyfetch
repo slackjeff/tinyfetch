@@ -1,5 +1,6 @@
+
 #!/bin/sh
-################################################################
+#--------------------------------------------------------------------#
 #AUTHOR
 # Jefferson 'Slackjeff' Carneiro
 #
@@ -9,15 +10,27 @@
 #LICENSE
 # GPLv2
 #
-# Tiny System Information tool writen in POSIX shell
-################################################################
+# Tiny System fast Information tool writen in POSIX shell
+#
+# Changelog
+# [V 1.1 - 24/07/2026]
+# 	- Add support wayland
+#   - Add Support gpu
+#   - Add Uptime
+#--------------------------------------------------------------------#
+set -e
 
-#========================= Variables
-export version='1.0'
+#-------------------------#
+# VARS
+#-------------------------#
+export version='1.1'
 # For speed, support UNICODE OFF
 export LC='C'
 export LANG='C'
-#========================= Functions
+
+#-------------------------#
+# FUNCTIONS
+#-------------------------#
 MEMORY() # Get memory total and free
 {
   while IFS=: read -r j c; do
@@ -39,26 +52,36 @@ CPU() # CPU INFO
   done < /proc/cpuinfo
 }
 
-AMBIENT() # i3, xfce, kde blablabla...
+
+AMBIENT()
 {
-  [ ! -f "${HOME}/.xinitrc" ] && { ambient='NO INFO'; return ;}
-  ambient="$(basename $(grep -E '^\s*exec\s\/' "$HOME/.xinitrc" | sed 's/^\s*exec\s*//g'))"
+  # Xorg or Wayland ?
+  if [ $XDG_SESSION_TYPE = 'wayland' ]; then
+	ambient="$DESKTOP_SESSION"
+  else
+	ambient="${XDG_CURRENT_DESKTOP:-$DESKTOP_SESSION}"
+  fi
 }
 
 INFO() # Print all info
 {
   . /etc/os-release # Load Info
+
+  local gpu
+  gpu=$(lspci | grep -Ei 'vga|3d|display' | grep -o '\[[^]]*\]' | tr '\n' ' ')
+
   cat <<EOF
 
-                     $USER@$(uname -n)
-                     -------------------
-                     OS      : $PRETTY_NAME
-  |\__      |\___    AMBIENT : $ambient
-(:> __)X  (:o ___(   KERNEL  : $(uname -rs)
-  |/        |/       SHELL   : ${SHELL##*/}
-                     CPU     : $modelname
- TINY IS INCRIBLE    MEM     : ${memfree}MB / ${memtotal}MB
-
+    ╭────────────╮      $USER@$(uname -n)
+    │  TINYFETCH │      -------------------
+    ╰────────────╯      OS       : $PRETTY_NAME
+  |\__      |\___       KERNEL   : $(uname -rs)
+(:> __)X  (:o ___(      UPTIME   : $(uptime -p | sed 's/up //')
+  |/        |/          SHELL    : ${SHELL##*/}
+                        AMBIENT  : $ambient
+                        CPU      : $modelname
+                        GPU      : $gpu
+                        MEMORY   : ${memfree}MB / ${memtotal}MB
 EOF
 }
 #========================= Main
