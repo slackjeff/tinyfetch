@@ -65,12 +65,14 @@ AMBIENT()
 
 INFO() # Print all info
 {
-  . /etc/os-release # Load Info
+	local ram gpu
+	
+	. /etc/os-release # Load Info
+   
+	ram=$(free -hm | awk '/^Mem:/ {print $3 "/" $2}')
+	gpu=$(lspci | grep -Ei 'vga|3d|display' | grep -o '\[[^]]*\]' | tr '\n' ' ')
 
-  local gpu
-  gpu=$(lspci | grep -Ei 'vga|3d|display' | grep -o '\[[^]]*\]' | tr '\n' ' ')
-
-  cat <<EOF
+	cat <<EOF
 
     ╭────────────╮      $USER@$(uname -n)
     │  TINYFETCH │      -------------------
@@ -81,7 +83,7 @@ INFO() # Print all info
                         AMBIENT  : $ambient
                         CPU      : $modelname
                         GPU      : $gpu
-                        MEMORY   : ${memfree}MB / ${memtotal}MB
+                        MEMORY   : $ram
 EOF
 }
 #========================= Main
